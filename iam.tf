@@ -1,0 +1,169 @@
+# IAM Roles and Policies for AWS DevOps Agent
+
+# Trust policy for DevOps Agent Space Role
+data "aws_iam_policy_document" "devops_agentspace_trust" {
+  statement {
+    effect = "Allow"
+    
+    principals {
+      type        = "Service"
+      identifiers = ["aidevops.amazonaws.com"]
+    }
+    
+    actions = ["sts:AssumeRole"]
+    
+    condition {
+      test     = "StringEquals"
+      variable = "aws:SourceAccount"
+      values   = [data.aws_caller_identity.current.account_id]
+    }
+    
+    condition {
+      test     = "ArnLike"
+      variable = "aws:SourceArn"
+      values   = ["arn:aws:aidevops:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:agentspace/*"]
+    }
+  }
+}
+
+# DevOps Agent Space Role
+resource "aws_iam_role" "devops_agentspace" {
+  name               = "DevOpsAgentRole-AgentSpace"
+  assume_role_policy = data.aws_iam_policy_document.devops_agentspace_trust.json
+  
+  tags = var.tags
+}
+
+# Attach AWS managed policy to Agent Space role
+resource "aws_iam_role_policy_attachment" "devops_agentspace_managed" {
+  role       = aws_iam_role.devops_agentspace.name
+  policy_arn = "arn:aws:iam::aws:policy/AIOpsAssistantPolicy"
+}
+
+# Additional inline policy for Agent Space role
+data "aws_iam_policy_document" "devops_agentspace_inline" {
+  statement {
+    sid    = "AllowAwsSupportActions"
+    effect = "Allow"
+    
+    actions = [
+      "support:CreateCase",
+      "support:DescribeCases"
+    ]
+    
+    resources = ["*"]
+  }
+  
+  statement {
+    sid    = "AllowExpandedAIOpsAssistantPolicy"
+    effect = "Allow"
+    
+    actions = [
+      "aidevops:GetKnowledgeItem",
+      "aidevops:ListKnowledgeItems",
+      "eks:AccessKubernetesApi",
+      "synthetics:GetCanaryRuns",
+      "route53:GetHealthCheckStatus",
+      "resource-explorer-2:Search"
+    ]
+    
+    resources = ["*"]
+  }
+}
+
+resource "aws_iam_role_policy" "devops_agentspace_inline" {
+  name   = "AllowExpandedAIOpsAssistantPolicy"
+  role   = aws_iam_role.devops_agentspace.id
+  policy = data.aws_iam_policy_document.devops_agentspace_inline.json
+}
+
+# Trust policy for Operator App Role
+data "aws_iam_policy_document" "devops_operator_trust" {
+  statement {
+    effect = "Allow"
+    
+    principals {
+      type        = "Service"
+      identifiers = ["aidevops.amazonaws.com"]
+    }
+    
+    actions = ["sts:AssumeRole"]
+    
+    condition {
+      test     = "StringEquals"
+      variable = "aws:SourceAccount"
+      values   = [data.aws_caller_identity.current.account_id]
+    }
+    
+    condition {
+      test     = "ArnLike"
+      variable = "aws:SourceArn"
+      values   = ["arn:aws:aidevops:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:agentspace/*"]
+    }
+  }
+}
+
+# DevOps Operator App Role
+resource "aws_iam_role" "devops_operator" {
+  name               = "DevOpsAgentRole-WebappAdmin"
+  assume_role_policy = data.aws_iam_policy_document.devops_operator_trust.json
+  
+  tags = var.tags
+}
+
+# Inline policy for Operator App role
+data "aws_iam_policy_document" "devops_operator_inline" {
+  statement {
+    sid    = "AllowBasicOperatorActions"
+    effect = "Allow"
+    
+    actions = [
+      "aidevops:GetAgentSpace",
+      "aidevops:GetAssociation",
+      "aidevops:ListAssociations",
+      "aidevops:CreateBacklogTask",
+      "aidevops:GetBacklogTask",
+      "aidevops:UpdateBacklogTask",
+      "aidevops:ListBacklogTasks",
+      "aidevops:ListChildExecutions",
+      "aidevops:ListJournalRecords",
+      "aidevops:DiscoverTopology",
+      "aidevops:InvokeAgent",
+      "aidevops:ListGoals",
+      "aidevops:ListRecommendations",
+      "aidevops:ListExecutions",
+      "aidevops:GetRecommendation",
+      "aidevops:UpdateRecommendation",
+      "aidevops:CreateKnowledgeItem",
+      "aidevops:ListKnowledgeItems",
+      "aidevops:GetKnowledgeItem",
+      "aidevops:UpdateKnowledgeItem",
+      "aidevops:ListPendingMessages",
+      "aidevops:InitiateChatForCase",
+      "aidevops:EndChatForCase",
+      "aidevops:DescribeSupportLevel",
+      "aidevops:SendChatMessage"
+    ]
+    
+    resources = ["arn:aws:aidevops:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:agentspace/*"]
+  }
+  
+  statement {
+    sid    = "AllowSupportOperatorActions"
+    effect = "Allow"
+    
+    actions = [
+      "support:DescribeCases",
+      "support:InitiateChatForCase",
+      "support:DescribeSupportLevel"
+    ]
+    
+    resources = ["*"]
+  }
+}
+
+resource "aws_iam_role_policy" "devops_operator_inline" {
+  name   = "AIDevOpsBasicOperatorActionsPolicy"
+  role   = aws_iam_role.devops_operator.id
+  policy = data.aws_iam_policy_document.devops_operator_inline.json
+}
