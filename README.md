@@ -30,6 +30,40 @@ This configuration creates the following resources:
 
 ## Usage
 
+### Option 1: Automated Deployment (Recommended)
+
+1. **Clone and Configure**
+   ```bash
+   git clone <this-repo>
+   cd aws-devops-agent-terraform
+   ```
+
+2. **Run Automated Deployment**
+   ```bash
+   ./deploy.sh
+   ```
+   This script will:
+   - Check prerequisites (Terraform, AWS CLI, credentials)
+   - Create `terraform.tfvars` from example if needed
+   - Initialize, validate, plan, and apply Terraform
+   - Handle IAM propagation delays with retry logic
+
+3. **Complete Setup**
+   ```bash
+   ./post-deploy.sh
+   ```
+   This script will:
+   - Configure AWS DevOps Agent CLI if needed
+   - Optionally enable the Operator App
+   - Provide verification commands
+
+4. **Clean Up (when needed)**
+   ```bash
+   ./cleanup.sh
+   ```
+
+### Option 2: Manual Deployment
+
 1. **Clone and Configure**
    ```bash
    git clone <this-repo>
@@ -78,6 +112,36 @@ This configuration creates the following resources:
 ### Cross-Account Monitoring
 
 To monitor external AWS accounts:
+
+#### Option 1: Using the Setup Script (Recommended)
+
+1. **Deploy the main infrastructure first**
+   ```bash
+   ./deploy.sh
+   ./post-deploy.sh
+   ```
+
+2. **Generate cross-account role templates**
+   ```bash
+   ./setup-cross-account-roles.sh
+   ```
+   This script will:
+   - Extract necessary values from your Terraform deployment
+   - Generate trust policy and permissions files
+   - Provide step-by-step commands for each external account
+
+3. **Add external account IDs to your configuration**
+   Edit `terraform.tfvars` and add:
+   ```hcl
+   external_account_ids = ["123456789012", "234567890123"]
+   ```
+
+4. **Apply the updated configuration**
+   ```bash
+   terraform apply
+   ```
+
+#### Option 2: Manual Cross-Account Setup
 
 1. Add account IDs to `external_account_ids` in your `terraform.tfvars`
 2. In each external account, create the cross-account role:
