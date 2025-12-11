@@ -15,9 +15,19 @@ output "agent_space_name" {
   value       = awscc_devopsagent_agent_space.main.name
 }
 
+output "devops_agentspace_role_name" {
+  description = "Name of the DevOps Agent Space IAM role"
+  value       = aws_iam_role.devops_agentspace.name
+}
+
 output "devops_agentspace_role_arn" {
   description = "ARN of the DevOps Agent Space IAM role"
   value       = aws_iam_role.devops_agentspace.arn
+}
+
+output "devops_operator_role_name" {
+  description = "Name of the DevOps Operator App IAM role"
+  value       = aws_iam_role.devops_operator.name
 }
 
 output "devops_operator_role_arn" {
@@ -32,12 +42,12 @@ output "primary_account_association_id" {
 
 output "external_account_association_ids" {
   description = "IDs of external AWS account associations"
-  value       = awscc_devopsagent_association.external_aws_accounts[*].id
+  value       = { for k, v in awscc_devopsagent_association.external_aws_accounts : k => v.id }
 }
 
-output "operator_app_enabled" {
-  description = "Whether the operator app is enabled"
-  value       = var.enable_operator_app
+output "operator_app_role_arn" {
+  description = "ARN of the operator app role (for manual setup)"
+  value       = aws_iam_role.devops_operator.arn
 }
 
 output "account_id" {
@@ -59,15 +69,24 @@ output "manual_setup_instructions" {
     
     Agent Space ID: ${awscc_devopsagent_agent_space.main.id}
     
-    Next Steps:
-    1. For external accounts, create cross-account roles in each external account:
+    Manual Steps Required:
+    
+    1. Enable Operator App (if desired):
+       aws devopsagent enable-operator-app \
+         --agent-space-id ${awscc_devopsagent_agent_space.main.id} \
+         --auth-flow ${var.auth_flow} \
+         --operator-app-role-arn ${aws_iam_role.devops_operator.arn} \
+         --endpoint-url "https://api.prod.cp.aidevops.us-east-1.api.aws" \
+         --region us-east-1
+    
+    2. For external accounts, create cross-account roles in each external account:
        - Use the trust policy with monitoring account: ${data.aws_caller_identity.current.account_id}
        - External ID: arn:aws:aidevops:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:agentspace/${awscc_devopsagent_agent_space.main.id}
     
-    2. Access the DevOps Agent console at:
+    3. Access the DevOps Agent console at:
        https://console.aws.amazon.com/devopsagent/
     
-    3. CLI commands to verify setup:
+    4. CLI commands to verify setup:
        aws devopsagent list-agent-spaces --endpoint-url "https://api.prod.cp.aidevops.us-east-1.api.aws" --region us-east-1
        aws devopsagent get-agent-space --agent-space-id ${awscc_devopsagent_agent_space.main.id} --endpoint-url "https://api.prod.cp.aidevops.us-east-1.api.aws" --region us-east-1
   EOT

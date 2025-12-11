@@ -40,10 +40,25 @@ variable "auth_flow" {
   }
 }
 
-variable "external_account_ids" {
-  description = "List of external AWS account IDs to associate (optional)"
-  type        = list(string)
-  default     = []
+variable "external_accounts" {
+  description = "Map of external AWS accounts to associate (optional). Key is account ID, value is role ARN for cross-account access."
+  type = map(object({
+    account_id = string
+    role_arn   = string
+  }))
+  default = {}
+}
+
+variable "create_cross_account_roles" {
+  description = "Whether to create cross-account roles in external accounts (requires provider aliases)"
+  type        = bool
+  default     = false
+}
+
+variable "name_postfix" {
+  description = "Postfix for resource names to ensure uniqueness"
+  type        = string
+  default     = ""
 }
 
 variable "tags" {

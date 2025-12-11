@@ -1,5 +1,10 @@
 # IAM Roles and Policies for AWS DevOps Agent
 
+# Random suffix to ensure unique role names
+resource "random_id" "suffix" {
+  byte_length = 4
+}
+
 # Trust policy for DevOps Agent Space Role
 data "aws_iam_policy_document" "devops_agentspace_trust" {
   statement {
@@ -28,7 +33,7 @@ data "aws_iam_policy_document" "devops_agentspace_trust" {
 
 # DevOps Agent Space Role
 resource "aws_iam_role" "devops_agentspace" {
-  name               = "DevOpsAgentRole-AgentSpace"
+  name               = "DevOpsAgentRole-AgentSpace-${var.name_postfix != "" ? var.name_postfix : random_id.suffix.hex}"
   assume_role_policy = data.aws_iam_policy_document.devops_agentspace_trust.json
   
   tags = var.tags
@@ -105,7 +110,7 @@ data "aws_iam_policy_document" "devops_operator_trust" {
 
 # DevOps Operator App Role
 resource "aws_iam_role" "devops_operator" {
-  name               = "DevOpsAgentRole-WebappAdmin"
+  name               = "DevOpsAgentRole-WebappAdmin-${var.name_postfix != "" ? var.name_postfix : random_id.suffix.hex}"
   assume_role_policy = data.aws_iam_policy_document.devops_operator_trust.json
   
   tags = var.tags

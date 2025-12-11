@@ -4,6 +4,9 @@
 # AWS region (must be us-east-1 for DevOps Agent)
 aws_region = "us-east-1"
 
+# Resource naming (optional - if not provided, random suffix will be used)
+# name_postfix = "v2"
+
 # Agent Space configuration
 agent_space_name        = "MyCompanyAgentSpace"
 agent_space_description = "DevOps Agent Space for monitoring production workloads"
@@ -13,7 +16,19 @@ enable_operator_app = true
 auth_flow          = "iam"  # or "idc" for Identity Center
 
 # External AWS accounts to monitor (optional)
-# external_account_ids = ["123456789012", "234567890123"]
+# external_accounts = {
+#   "123456789012" = {
+#     account_id = "123456789012"
+#     role_arn   = "arn:aws:iam::123456789012:role/OrganizationAccountAccessRole"
+#   }
+#   "234567890123" = {
+#     account_id = "234567890123"
+#     role_arn   = "arn:aws:iam::234567890123:role/OrganizationAccountAccessRole"
+#   }
+# }
+
+# Whether to create cross-account roles automatically (requires provider aliases)
+# create_cross_account_roles = false
 
 # Tags for all resources
 tags = {

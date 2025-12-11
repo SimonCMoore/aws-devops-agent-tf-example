@@ -71,7 +71,31 @@ fi
 
 # Apply deployment
 echo "🚀 Applying deployment..."
-terraform apply tfplan
+echo "   Note: IAM roles may take time to propagate. If you see STS role errors, wait a moment and retry."
+
+# Try to apply, with retry logic for IAM propagation issues
+RETRY_COUNT=0
+MAX_RETRIES=3
+
+while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+    if terraform apply tfplan; then
+        echo "✅ Deployment successful!"
+        break
+    else
+        RETRY_COUNT=$((RETRY_COUNT + 1))
+        if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then
+            echo "⚠️  Deployment failed (attempt $RETRY_COUNT/$MAX_RETRIES)"
+            echo "   This might be due to IAM propagation delays. Waiting 30 seconds before retry..."
+            sleep 30
+            echo "🔄 Retrying deployment..."
+        else
+            echo "❌ Deployment failed after $MAX_RETRIES attempts"
+            echo "   Please check the errors above and try running 'terraform apply' manually"
+            rm -f tfplan
+            exit 1
+        fi
+    fi
+done
 
 # Clean up plan file
 rm -f tfplan
@@ -79,10 +103,15 @@ rm -f tfplan
 echo ""
 echo "🎉 Deployment completed successfully!"
 echo ""
-echo "📋 Next steps:"
+echo "📋 IMPORTANT: Run the post-deployment script to complete setup:"
+echo "   ./post-deploy.sh"
+echo ""
+echo "This will:"
+echo "• Set up the AWS DevOps Agent CLI (if not already configured)"
+echo "• Enable the Operator App (optional)"
+echo "• Provide verification commands"
+echo ""
+echo "📋 Additional next steps:"
 echo "1. Check the outputs above for your Agent Space ID"
 echo "2. Visit https://console.aws.amazon.com/devopsagent/ to access the console"
 echo "3. For external accounts, follow the cross-account setup instructions in README.md"
-echo ""
-echo "🔍 To verify your setup:"
-echo "aws devopsagent list-agent-spaces --endpoint-url 'https://api.prod.cp.aidevops.us-east-1.api.aws' --region us-east-1"
